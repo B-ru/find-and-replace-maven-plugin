@@ -10,13 +10,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.MethodSorters;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -26,6 +21,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertFalse;
@@ -518,6 +515,33 @@ public class FindAndReplaceMojoTest {
     assertTrue(fileContains(xmlTestFile.toFile(), "asdf"));
     assertTrue(fileContains(xmlTestFile.toFile(), "-test-"));
     assertTrue(fileContains(ymlTestFile.toFile(), "asdf"));
+
+  }
+
+  @Test
+  public void testFileContentsRegexN() throws NoSuchFieldException, IllegalAccessException,
+          MojoExecutionException, MojoFailureException {
+
+    String regex = "\\n";
+    setFieldValue(findAndReplaceMojo, "findRegex", regex);
+    String replaceValue = "";
+    setFieldValue(findAndReplaceMojo, "exclusions", ".yml$");
+    setFieldValue(findAndReplaceMojo, "replaceValue", replaceValue);
+    setFieldValue(findAndReplaceMojo, "processFileContents", true);
+    setFieldValue(findAndReplaceMojo, "replacementType", "file-contents");
+    setFieldValue(findAndReplaceMojo, "replaceAll", true);
+
+    findAndReplaceMojo.execute();
+
+    assertFalse(regexFileContains(textTestFile.toFile(), regex));
+    assertFalse(regexFileContains(xmlTestFile.toFile(), regex));
+    assertTrue(regexFileContains(ymlTestFile.toFile(), regex));
+    assertFalse(regexFileContains(nonUtfTestFile.toFile(), regex));
+
+    assertTrue(regexFileContains(textTestFile.toFile(), "asdf"));
+    assertTrue(regexFileContains(xmlTestFile.toFile(), "asdf"));
+    assertTrue(regexFileContains(xmlTestFile.toFile(), "-test-"));
+    assertTrue(regexFileContains(ymlTestFile.toFile(), "asdf"));
 
   }
 
@@ -1127,7 +1151,21 @@ public class FindAndReplaceMojoTest {
 
       Stream<String> lines = fileReader.lines();
 
-      return lines.anyMatch(line -> line.contains(findValue));
+      return lines.anyMatch(line -> line.contains(findValue) || line.matches(findValue));
+    }
+  }
+
+  private boolean regexFileContains(File file, String findValue){
+    return regexFileContains(file, findValue, Charset.defaultCharset());
+  }
+
+  private boolean regexFileContains(File file, String findValue, Charset charset)  {
+    try {
+      String fileContent = new String(Files.readAllBytes(file.toPath()), charset);
+      Pattern pattern = Pattern.compile(findValue);
+      return pattern.matcher(fileContent).find();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
