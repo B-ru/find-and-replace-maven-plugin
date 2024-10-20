@@ -1151,7 +1151,7 @@ public class FindAndReplaceMojoTest {
 
       Stream<String> lines = fileReader.lines();
 
-      return lines.anyMatch(line -> line.contains(findValue) || line.matches(findValue));
+      return lines.anyMatch(line -> line.contains(findValue));
     }
   }
 
