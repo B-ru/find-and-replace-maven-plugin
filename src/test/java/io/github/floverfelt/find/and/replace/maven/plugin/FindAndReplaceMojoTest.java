@@ -476,7 +476,7 @@ public class FindAndReplaceMojoTest {
   public void testFileContentsMultiLineRegex() throws IOException, NoSuchFieldException, IllegalAccessException,
           MojoExecutionException, MojoFailureException {
 
-    setFieldValue(findAndReplaceMojo, "findRegex", "asdf\r\n\r\n-test-");
+    setFieldValue(findAndReplaceMojo, "findRegex", "asdf" + System.lineSeparator() + System.lineSeparator() + "-test-");
     String replaceValue = "value successfully replaced";
     setFieldValue(findAndReplaceMojo, "replaceValue", replaceValue);
     setFieldValue(findAndReplaceMojo, "processFileContents", true);
@@ -494,11 +494,12 @@ public class FindAndReplaceMojoTest {
     assertTrue(fileContains(ymlTestFile.toFile(), "asdf"));
 
   }
+  
   @Test
   public void testFileContentsMultiLineRegex2() throws IOException, NoSuchFieldException, IllegalAccessException,
           MojoExecutionException, MojoFailureException {
 
-    setFieldValue(findAndReplaceMojo, "findRegex", "asdf[\\w\\W]{4,37}-test-");
+    setFieldValue(findAndReplaceMojo, "findRegex", "asdf[\\w\\W]{2,37}-test-");
     String replaceValue = "value successfully replaced";
     setFieldValue(findAndReplaceMojo, "replaceValue", replaceValue);
     setFieldValue(findAndReplaceMojo, "processFileContents", true);
@@ -522,7 +523,7 @@ public class FindAndReplaceMojoTest {
   public void testFileContentsRegexN() throws NoSuchFieldException, IllegalAccessException,
           MojoExecutionException, MojoFailureException {
 
-    String regex = "\\n";
+    String regex = System.lineSeparator();
     setFieldValue(findAndReplaceMojo, "findRegex", regex);
     String replaceValue = "";
     setFieldValue(findAndReplaceMojo, "exclusions", ".yml$");
@@ -543,6 +544,40 @@ public class FindAndReplaceMojoTest {
     assertTrue(regexFileContains(xmlTestFile.toFile(), "-test-"));
     assertTrue(regexFileContains(ymlTestFile.toFile(), "asdf"));
 
+  }
+  
+  @Test
+  public void testFilePosixPermissionPositive() throws NoSuchFieldException, IllegalAccessException, MojoExecutionException, MojoFailureException{
+      textTestFile.toFile().setExecutable(true);
+      String regex = System.lineSeparator();
+      setFieldValue(findAndReplaceMojo, "findRegex", regex);
+      String replaceValue = "";
+      setFieldValue(findAndReplaceMojo, "exclusions", "^(\\.txt$)");
+      setFieldValue(findAndReplaceMojo, "replaceValue", replaceValue);
+      setFieldValue(findAndReplaceMojo, "processFileContents", true);
+      setFieldValue(findAndReplaceMojo, "replacementType", "file-contents");
+      setFieldValue(findAndReplaceMojo, "replaceAll", true);
+      
+      findAndReplaceMojo.execute();
+            
+      assertTrue(textTestFile.toFile().canExecute());
+  }
+  
+  @Test
+  public void testFilePosixPermissionNegative() throws NoSuchFieldException, IllegalAccessException, MojoExecutionException, MojoFailureException{
+      textTestFile.toFile().setExecutable(false);
+      String regex = System.lineSeparator();
+      setFieldValue(findAndReplaceMojo, "findRegex", regex);
+      String replaceValue = "";
+      setFieldValue(findAndReplaceMojo, "exclusions", "^(\\.txt$)");
+      setFieldValue(findAndReplaceMojo, "replaceValue", replaceValue);
+      setFieldValue(findAndReplaceMojo, "processFileContents", true);
+      setFieldValue(findAndReplaceMojo, "replacementType", "file-contents");
+      setFieldValue(findAndReplaceMojo, "replaceAll", true);
+      
+      findAndReplaceMojo.execute();
+            
+      assertFalse(textTestFile.toFile().canExecute());
   }
 
   @Test

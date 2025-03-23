@@ -4,13 +4,17 @@ import org.apache.maven.plugin.logging.Log;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -197,10 +201,14 @@ public class ProcessFilesTask {
   }
 
   private static boolean applyAccessBits(File original, File successor){
-    String actions = new FilePermission(original.getPath(), "read, write, execute").getActions();
-    return
-            successor.setReadable(actions.contains("read"))
-            && successor.setWritable(actions.contains("write"))
-            && successor.setExecutable(actions.contains("execute"));
+    try{
+        if(FileSystems.getDefault().supportedFileAttributeViews().contains("posix")){
+            Set<PosixFilePermission> permissions = Files.readAttributes(original.toPath(), PosixFileAttributes.class).permissions();
+            Files.setPosixFilePermissions(successor.toPath(), permissions);
+        } 
+        return true;
+    } catch(IOException e){
+        return false;
+    }    
   }
 }
