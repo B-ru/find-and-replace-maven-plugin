@@ -2,11 +2,7 @@ package io.github.floverfelt.find.and.replace.maven.plugin.tasks;
 
 import org.apache.maven.plugin.logging.Log;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -168,6 +164,10 @@ public class ProcessFilesTask {
       }
     }
 
+    if(!applyAccessBits(file, tempFile)){
+      throw new RuntimeException("Failed to apply access bits at: " + file.getPath());
+    }
+
     if (!file.delete()) {
       throw new IOException("Failed to delete file at: " + file.getPath());
     }
@@ -196,4 +196,11 @@ public class ProcessFilesTask {
 
   }
 
+  private static boolean applyAccessBits(File original, File successor){
+    String actions = new FilePermission(original.getPath(), "read, write, execute").getActions();
+    return
+            successor.setReadable(actions.contains("read"))
+            && successor.setWritable(actions.contains("write"))
+            && successor.setExecutable(actions.contains("execute"));
+  }
 }
