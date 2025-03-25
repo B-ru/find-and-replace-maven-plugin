@@ -124,6 +124,23 @@ public class FindAndReplaceMojo extends AbstractMojo {
    */
   @Parameter(property = "replaceAll", defaultValue = "true")
   private boolean replaceAll;
+  
+  /**
+   * Whether the find and replace maven plugin replaces replaces multiple regular expressions separated by specified delimiter or just one.
+   * 
+   * @parameter multipleReplacements
+   */
+  @Parameter(property = "multipleReplacements", required = false, defaultValue = "false")
+  private boolean multipleReplacements;
+  
+  
+  /**
+   * Delimiter for regular expressions values and replacement values.
+   * 
+   * @parameter multipleReplacementsDelimiter
+   */
+  @Parameter(property = "multipleReplacementsDelimiter", required = false, defaultValue = ";")
+  private String multipleReplacementsDelimiter;
 
   private Charset charset = Charset.defaultCharset();
 
@@ -147,18 +164,16 @@ public class FindAndReplaceMojo extends AbstractMojo {
       getLog().warn("Skipping execution of find-and-replace-maven-plugin.");
       return;
     }
-
+    
     setup();
 
     getLog().info("Executing find-and-replace maven plugin with options: " + this.toString());
-
-    try {
-      ProcessFilesTask.process(getLog(), baseDirPath, recursive, Pattern.compile(findRegex), replaceValue, fileMaskList,
-          exclusionsList, processFileContents, processFilenames, processDirectoryNames, replaceAll, charset);
-    } catch (Exception e) {
-      throw new MojoFailureException("Unable to process files.", e);
+    
+    if(multipleReplacements){
+      attempMultipleProcesses();
+    } else {
+      attempProcess();
     }
-
   }
 
   private void setup() throws MojoExecutionException {
@@ -273,5 +288,27 @@ public class FindAndReplaceMojo extends AbstractMojo {
     sb.append(", replaceAll=").append(replaceAll);
     sb.append('}');
     return sb.toString();
+  }
+  
+  private void attempMultipleProcesses() throws MojoFailureException{
+    String[] findRegexes = findRegex.split(multipleReplacementsDelimiter);
+    String[] replaceValues = replaceValue.split(multipleReplacementsDelimiter);
+    if(findRegexes.length != replaceValues.length){
+      throw new MojoFailureException("Regex count doesn't match Replacements count");
+    }
+    for(int i = 0; i < findRegexes.length; i++){
+      findRegex = findRegexes[i];
+      replaceValue = replaceValues[i];
+      attempProcess();
+    }
+  }
+  
+  private void attempProcess() throws MojoFailureException{
+    try {
+      ProcessFilesTask.process(getLog(), baseDirPath, recursive, Pattern.compile(findRegex), replaceValue, fileMaskList,
+      exclusionsList, processFileContents, processFilenames, processDirectoryNames, replaceAll, charset);
+    } catch (Exception e) {
+      throw new MojoFailureException("Unable to process files.", e);
+    }
   }
 }

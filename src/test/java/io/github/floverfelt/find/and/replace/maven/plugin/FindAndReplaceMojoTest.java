@@ -1050,6 +1050,62 @@ public class FindAndReplaceMojoTest {
     assertTrue(fileContains(thirdYmlFile.toFile(), "test-"));
 
   }
+  
+  @Test
+  public void testMultipleReplacements() throws NoSuchFieldException, IllegalAccessException, MojoExecutionException, MojoFailureException, IOException{
+    setFieldValue(findAndReplaceMojo, "multipleReplacements", true);
+    String delimiter = "##";
+    setFieldValue(findAndReplaceMojo, "multipleReplacementsDelimiter", delimiter);
+    String firstRegex = "as";
+    String secondRegex = "df";
+    String findRegex = firstRegex + delimiter + secondRegex;
+    setFieldValue(findAndReplaceMojo, "findRegex", findRegex);
+    String firstReplaceValue = "_=_";
+    String secondReplaceValue = "t10";
+    String replaceValue = firstReplaceValue + delimiter + secondReplaceValue ;
+    setFieldValue(findAndReplaceMojo, "replaceValue", replaceValue);
+    setFieldValue(findAndReplaceMojo, "processFileContents", true);
+    setFieldValue(findAndReplaceMojo, "replacementType", "file-contents");
+    setFieldValue(findAndReplaceMojo, "replaceAll", true);
+
+    findAndReplaceMojo.execute();
+
+    assertTrue(fileContains(textTestFile.toFile(), firstReplaceValue));
+    assertTrue(fileContains(textTestFile.toFile(), secondReplaceValue));
+    assertTrue(fileContains(xmlTestFile.toFile(), firstReplaceValue));
+    assertTrue(fileContains(xmlTestFile.toFile(), secondReplaceValue));
+    assertTrue(fileContains(ymlTestFile.toFile(), firstReplaceValue));
+    assertTrue(fileContains(ymlTestFile.toFile(), secondReplaceValue));
+
+    assertFalse(fileContains(textTestFile.toFile(), "asdf"));
+    assertFalse(fileContains(xmlTestFile.toFile(), "asdf"));
+    assertFalse(fileContains(ymlTestFile.toFile(), "asdf"));
+  }
+  
+  @Test
+  public void testMultipleReplacementsException()throws RuntimeException, NoSuchFieldException, IllegalAccessException, MojoExecutionException, MojoFailureException, IOException{
+    setFieldValue(findAndReplaceMojo, "multipleReplacements", true);
+    String delimiter = "##";
+    setFieldValue(findAndReplaceMojo, "multipleReplacementsDelimiter", delimiter);
+    String firstRegex = "as";
+    String secondRegex = "df";
+    String findRegex = firstRegex + delimiter + secondRegex;
+    setFieldValue(findAndReplaceMojo, "findRegex", findRegex);
+    String firstReplaceValue = "_=_";
+    String replaceValue = firstReplaceValue;
+    setFieldValue(findAndReplaceMojo, "replaceValue", replaceValue);
+    setFieldValue(findAndReplaceMojo, "processFileContents", true);
+    setFieldValue(findAndReplaceMojo, "replacementType", "file-contents");
+    setFieldValue(findAndReplaceMojo, "replaceAll", true);
+    
+    try{
+      findAndReplaceMojo.execute();
+      throw new RuntimeException("Exception expected!");
+    } catch (MojoFailureException e){
+      assertTrue(e.getMessage().equals("Regex count doesn't match Replacements count"));
+    }
+    
+  }
 
   private void setFieldValue(Object obj, String fieldName, Object val)
           throws NoSuchFieldException, IllegalAccessException {
